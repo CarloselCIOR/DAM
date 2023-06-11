@@ -1,0 +1,145 @@
+import 'package:dam_u3_ejercicio7_mano2/basededatos.dart';
+import 'package:dam_u3_ejercicio7_mano2/captura3.dart';
+import 'package:dam_u3_ejercicio7_mano2/servicio.dart';
+import 'package:flutter/material.dart';
+
+class Programa3 extends StatefulWidget {
+  const Programa3({Key? key}) : super(key: key);
+
+  @override
+  State<Programa3> createState() => _Programa3State();
+}
+
+class _Programa3State extends State<Programa3> {
+  List<Servicio> todosServicio = [];
+//  int? idservicio;
+//   String? fecha;
+//   String? placa;
+//   int? km;
+//   double? costo;
+
+  @override
+  void initState(){
+    //TODO: implement initState
+    super.initState();
+    actualizarLista();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("SERVICIO"),
+        centerTitle: true,
+      ),
+      body: ListView.builder(
+        itemCount: todosServicio.length,
+
+        itemBuilder: (itemBuilder, index){
+          return InkWell(
+            onTap: (){
+              mostrarAlerta(index);
+            },
+            child: ListTile(
+              title: Text(todosServicio[index].fecha.toString() + ' - Costo: ' + todosServicio[index].costo.toString()),
+              subtitle: Text('Placa: ' + todosServicio[index].placa.toString()),
+              trailing: Text('ID: ' + todosServicio[index].idservicio.toString() + ' - Kilometraje: ' + todosServicio[index].km.toString()),
+            ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(onPressed: (){
+        Navigator.push(context, MaterialPageRoute(builder: (builder)=>Capturar3())).then((value) => actualizarLista());
+      },
+        child: Icon(Icons.add),
+      ),
+    );
+  }
+
+  void actualizarLista() async {
+    List<Servicio> temporal = await DB.consultaTodosServicio();
+    setState(() {
+      todosServicio = temporal;
+    });
+  }
+
+  void mostrarAlerta(int index) {
+    showDialog(context: context, builder: (builder){
+      return AlertDialog(
+        title: Text("ATENCIÓN"),
+        content: Text("¿QUE DESEA HACER CON ${todosServicio[index].placa}?"),
+        actions: [
+          TextButton(onPressed: (){
+            _mostrarModal(index);
+            //PONERLO EN UN MODAL showModalBottomSheet(context: context, builder: builder)
+          }, child: const Text("ACTUALIZAR")),
+          TextButton(onPressed: (){
+            DB.eliminarCoche(todosServicio[index].placa as int).then((value) => actualizarLista());
+            Navigator.pop(context);
+          }, child: const Text("ELIMINAR")),
+          TextButton(onPressed: (){
+            Navigator.pop(context);
+          }, child: const Text("NADA")),
+        ],
+      );
+    });
+  }
+
+
+  void _mostrarModal(int index) {
+    final idServicioController = TextEditingController();
+    final fechaController = TextEditingController();
+    final placaController = TextEditingController();
+    final kmController = TextEditingController();
+    final costoController = TextEditingController();
+
+
+    idServicioController.text = todosServicio[index].placa.toString();
+    fechaController.text = todosServicio[index].fecha.toString();
+    placaController.text = todosServicio[index].placa.toString();
+    kmController.text = todosServicio[index].km.toString();
+    costoController.text = todosServicio[index].costo.toString();
+
+    showModalBottomSheet(
+        elevation: 5,
+        context: context,
+        isScrollControlled: true,
+        builder: (builder){
+          return Container(
+            padding: EdgeInsets.only(
+                top: 15,
+                left: 30,
+                right: 30,
+                bottom: MediaQuery.of(context).viewInsets.bottom+400
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: idServicioController),
+                SizedBox(height: 10,),
+                TextField(controller: fechaController),
+                SizedBox(height: 10,),
+                TextField(controller: placaController),
+                SizedBox(height: 10,),
+                TextField(controller: kmController),
+                SizedBox(height: 10,),
+                TextField(controller: costoController),
+                SizedBox(height: 10,),
+
+                FilledButton(onPressed: (){
+                  todosServicio[index].idservicio = int.parse(idServicioController.text);
+                  todosServicio[index].fecha = fechaController.text;
+                  todosServicio[index].placa = placaController.text;
+                  todosServicio[index].km = int.parse(kmController.text);
+                  todosServicio[index].costo = double.parse(costoController.text);
+                  DB.actualizarServicio(todosServicio[index]).then((value) => actualizarLista());
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                }, child: Text("Guardar Cambios")),
+              ],
+            ),
+          );
+        });
+  }
+
+}

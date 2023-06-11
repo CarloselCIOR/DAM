@@ -1,0 +1,144 @@
+import 'package:dam_u3_ejercicio7_mano2/basededatos.dart';
+import 'package:dam_u3_ejercicio7_mano2/captura2.dart';
+import 'package:dam_u3_ejercicio7_mano2/coche.dart';
+import 'package:flutter/material.dart';
+
+class Programa2 extends StatefulWidget {
+  const Programa2({Key? key}) : super(key: key);
+
+  @override
+  State<Programa2> createState() => _Programa2State();
+}
+
+class _Programa2State extends State<Programa2> {
+  List<Coche> todosCoche = [];
+//  String? placa;
+//   String? marca;
+//   String? modelo;
+//   int? anho;
+//   int? idpropietario;
+
+  @override
+  void initState(){
+    //TODO: implement initState
+    super.initState();
+    actualizarLista();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("COCHES"),
+        centerTitle: true,
+      ),
+      body: ListView.builder(
+        itemCount: todosCoche.length,
+        itemBuilder: (itemBuilder, index){
+          return InkWell(
+            onTap: (){
+              mostrarAlerta(index);
+            },
+            child: ListTile(
+              title: Text(todosCoche[index].marca.toString() + ' - Modelo: ' + todosCoche[index].modelo.toString()),
+              subtitle: Text('Año: ' + todosCoche[index].anho.toString()),
+              trailing: Text('Placa: ' + todosCoche[index].placa.toString() + ' - Propietario: ' + todosCoche[index].idpropietario.toString()),
+            ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(onPressed: (){
+        Navigator.push(context, MaterialPageRoute(builder: (builder)=>Capturar2())).then((value) => actualizarLista());
+      },
+        child: Icon(Icons.add),
+      ),
+    );
+  }
+
+  void actualizarLista() async {
+    List<Coche> temporal = await DB.consultaTodosCoche();
+    setState(() {
+      todosCoche = temporal;
+    });
+  }
+
+  void mostrarAlerta(int index) {
+    showDialog(context: context, builder: (builder){
+      return AlertDialog(
+        title: Text("ATENCIÓN"),
+        content: Text("¿QUE DESEA HACER CON ${todosCoche[index].placa}?"),
+        actions: [
+          TextButton(onPressed: (){
+            _mostrarModal(index);
+            //PONERLO EN UN MODAL showModalBottomSheet(context: context, builder: builder)
+          }, child: const Text("ACTUALIZAR")),
+          TextButton(onPressed: (){
+            DB.eliminarCoche(todosCoche[index].placa as int).then((value) => actualizarLista());
+            Navigator.pop(context);
+          }, child: const Text("ELIMINAR")),
+          TextButton(onPressed: (){
+            Navigator.pop(context);
+          }, child: const Text("NADA")),
+        ],
+      );
+    });
+  }
+
+
+  void _mostrarModal(int index) {
+    final placaController = TextEditingController();
+    final marcaController = TextEditingController();
+    final modeloController = TextEditingController();
+    final anhoController = TextEditingController();
+    final idPropietarioController = TextEditingController();
+
+
+    placaController.text = todosCoche[index].placa.toString();
+    marcaController.text = todosCoche[index].marca.toString();
+    modeloController.text = todosCoche[index].modelo.toString();
+    anhoController.text = todosCoche[index].anho.toString();
+    idPropietarioController.text = todosCoche[index].idpropietario.toString();
+
+    showModalBottomSheet(
+        elevation: 50,
+        context: context,
+        isScrollControlled: true,
+        builder: (builder){
+          return Container(
+            padding: EdgeInsets.only(
+                top: 15,
+                left: 30,
+                right: 30,
+                bottom: MediaQuery.of(context).viewInsets.bottom+400
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: placaController),
+                SizedBox(height: 10,),
+                TextField(controller: marcaController),
+                SizedBox(height: 10,),
+                TextField(controller: modeloController),
+                SizedBox(height: 10,),
+                TextField(controller: anhoController),
+                SizedBox(height: 10,),
+                TextField(controller: idPropietarioController),
+                SizedBox(height: 10,),
+
+                FilledButton(onPressed: (){
+                  todosCoche[index].placa = placaController.text;
+                  todosCoche[index].marca = marcaController.text;
+                  todosCoche[index].modelo = modeloController.text;
+                  todosCoche[index].anho = int.parse(anhoController.text);
+                  todosCoche[index].idpropietario = int.parse(idPropietarioController.text);
+                  DB.actualizarCoche(todosCoche[index]).then((value) => actualizarLista());
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                }, child: Text("Guardar Cambios")),
+              ],
+            ),
+          );
+        });
+  }
+
+}

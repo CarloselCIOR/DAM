@@ -1,0 +1,139 @@
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
+import 'propietario.dart';
+import 'coche.dart';
+import 'servicio.dart';
+
+
+class DB {
+  static Future<Database> _abrirBase() async {
+    return openDatabase(join(await getDatabasesPath(), 'taller.db'),
+        onCreate: (db, version) async {
+          await db.execute('''
+            CREATE TABLE propietario (
+              idpropietario INTEGER PRIMARY KEY AUTOINCREMENT,
+              nombre TEXT,
+              telefono TEXT
+            )
+          ''');
+
+          await db.execute('''
+            CREATE TABLE coche (
+              placa TEXT PRIMARY KEY,
+              marca TEXT,
+              modelo TEXT,
+              anho INTEGER,
+              idpropietario INTEGER,
+              FOREIGN KEY (idpropietario) REFERENCES propietario(idpropietario)
+            )
+          ''');
+
+          await db.execute('''
+            CREATE TABLE servicio(
+              idservicio INTEGER PRIMARY KEY AUTOINCREMENT,
+              fecha TEXT,
+              placa TEXT,
+              km INTEGER,
+              costo REAL,
+              FOREIGN KEY (placa) REFERENCES coche(placa)
+            )
+          ''');
+        }, version: 1);
+  }
+
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  static Future<int> insertarPropietario(Propietario p) async {
+    Database base = await _abrirBase();
+    return base.insert("propietario", p.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  static Future<List<Propietario>> consultaTodosPropietario() async {
+    Database base = await _abrirBase();
+    final List<Map<String, dynamic>> mapaPropietario = await base.query("propietario");
+
+    return List.generate(mapaPropietario.length,
+            (index) => Propietario(
+          idpropietario: mapaPropietario[index]['idpropietario'],
+          nombre: mapaPropietario[index]['nombre'],
+          telefono: mapaPropietario[index]['telefono'],
+        ));
+  }
+
+  static Future<int> eliminarPropietario(int id) async {
+    Database base = await _abrirBase();
+    return base.delete("propietario", where: "idpropietario = ?", whereArgs: [id]);
+  }
+
+  static Future<int> actualizarPropietario(Propietario p) async {
+    Database base = await _abrirBase();
+    return base.update("propietario", p.toMap(),
+        where: "idpropietario = ?", whereArgs: [p.idpropietario]);
+  }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  static Future<int> insertarCoche(Coche c) async {
+    Database base = await _abrirBase();
+    return base.insert("coche", c.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  static Future<List<Coche>> consultaTodosCoche() async {
+    Database base = await _abrirBase();
+    final List<Map<String, dynamic>> mapaCoche = await base.query("coche");
+
+    return List.generate(mapaCoche.length,
+            (index) => Coche(
+          placa : mapaCoche[index]['placa'],
+          marca: mapaCoche[index]['marca'],
+          modelo: mapaCoche[index]['modelo'],
+          anho: mapaCoche[index]['anho'],
+          idpropietario: mapaCoche[index]['idpropietario'],
+        ));
+  }
+
+  static Future<int> eliminarCoche(String id) async {
+    Database base = await _abrirBase();
+    return base.delete("coche", where: "placa = ?", whereArgs: [id]);
+  }
+
+  static Future<int> actualizarCoche(Coche c) async {
+    Database base = await _abrirBase();
+    return base.update("coche", c.toMap(),
+        where: "placa = ?", whereArgs: [c.placa]);
+  }
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  static Future<int> insertarServicio(Servicio s) async {
+    Database base = await _abrirBase();
+    return base.insert("servicio", s.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  static Future<List<Servicio>> consultaTodosServicio() async {
+    Database base = await _abrirBase();
+    final List<Map<String, dynamic>> mapaServicio = await base.query("servicio");
+
+    return List.generate(mapaServicio.length,
+            (index) => Servicio(
+          idservicio : mapaServicio[index]['idservicio'],
+          fecha: mapaServicio[index]['fecha'],
+          placa: mapaServicio[index]['placa'],
+          km: mapaServicio[index]['km'],
+          costo: mapaServicio[index]['costo'],
+        ));
+  }
+
+  static Future<int> eliminarServicio(int id) async {
+    Database base = await _abrirBase();
+    return base.delete("servicio", where: "idservicio = ?", whereArgs: [id]);
+  }
+
+  static Future<int> actualizarServicio(Servicio s) async {
+    Database base = await _abrirBase();
+    return base.update("servicio", s.toMap(),
+        where: "idservicio = ?", whereArgs: [s.placa]);
+  }
+
+}
